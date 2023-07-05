@@ -3,7 +3,7 @@ import fiftyone as fo
 # Step 1: Load your data into FiftyOne
 
 dataset_name = "dataset"
-dataset_dir = "/home/fatemeh/Desktop/split1/1"
+dataset_dir = "/mnt/extra/Datasets/aggregated_p/1linechicken"
 
 # Load the dataset, using tags to mark the samples in each split
 if dataset_name in fo.list_datasets():

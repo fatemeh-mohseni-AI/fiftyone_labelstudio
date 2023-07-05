@@ -7,7 +7,8 @@ version 1.8.0 faces an unrecognized weired error shown as below :
 
 so install noted version . 
 after first run django will return an error due to limitation on upload file numbers and is does not related to label-studio .
-it is a Django limitation . i changed directly the line of code from the line :
+it is a Django limitation .
+~~ i changed directly the line of code from the line :
 
 << venv/lib/python3.8/site-packages/django/http/multipartparser.py", line 242 >>
 and change 
@@ -15,6 +16,13 @@ and change
 
 
 run label-studio first , then run label_studio_upload.py .
+
+if you faced runtime-error just do following change :
+<<venv/lib/python3.8/site-packages/label_studio_sdk/client.py>>
+
+~~change the line TIMEOUT= (10,50)   line 16 
+to the : TIMEOUT = (100.0, 5000.0)
+
 
 NOTE :
 the tree is as follows :
