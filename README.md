@@ -1,4 +1,6 @@
-just install label-studio version 1.7.3
+** my env: ubuntu 20.04 python 3.8.10 **
+
+just install label-studio version 1.7.3 on 
 version 1.8.0 faces an unrecognized weired error shown as below :
 
 << raise ValidationError(f'{ext} extension is not supported') >>
