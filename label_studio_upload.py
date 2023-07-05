@@ -12,8 +12,6 @@ else:
         dataset = fo.Dataset.from_dir(
                 dataset_dir=dataset_dir,
                 dataset_type=fo.types.YOLOv5Dataset,
-                tags=dataset_name,
-                dataset_name=dataset_name
         )
 dataset.persistent = True
 view = dataset.view()
@@ -32,9 +30,9 @@ view.annotate(
     project_name="fiftyone_test",
     backend="labelstudio",
     label_field="ground_truth",
-    url="http://localhost:8080",
-    api_key="94b10acd4d3af0f7026cde0ab8a8fb8a60a3a6ef",  # check READ.ME file
+    url="http://192.168.2.193:8080",
+#   api_key="94b10acd4d3af0f7026cde0ab8a8fb8a60a3a6ef",  # check READ.ME file   local
+    api_key="bc964e9c8293a9726713f20f2aad5b2732a93543",   # server
     launch_editor=True,
-    timeout=1000
 )
 print(dataset.get_annotation_info(anno_key))

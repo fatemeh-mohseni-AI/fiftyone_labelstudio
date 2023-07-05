@@ -15,3 +15,38 @@ and change
 
 
 run label-studio first , then run label_studio_upload.py .
+
+NOTE :
+the tree is as follows :
+
+dir/
+|
+------dataset.yaml
+------images
+      |
+       ---train
+       ---test
+------labels
+      |
+       ---train
+       ---test
+
+and dataset.yaml content looks like : 
+-----------------------------------------------------
+                                                    |
+                                                    \/
+train: ./images/traitrain: ./images/train/
+val: ./images/val/
+
+# number of classes
+nc: 5
+
+# class names
+names: ["clean_water_pot", "dirty_water_pot", "feeding_line", "feeding_pot", "watering_line"]n/
+val: ./images/val/
+
+# number of classes
+nc: 5
+
+# class names
+names: ["clean_water_pot", "dirty_water_pot", "feeding_line", "feeding_pot", "watering_line"]
