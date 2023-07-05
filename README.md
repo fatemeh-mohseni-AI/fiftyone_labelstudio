@@ -33,16 +33,9 @@ dir/
 
 and dataset.yaml content looks like : 
 -----------------------------------------------------
-                                                    |
-                                                    \/
-train: ./images/traitrain: ./images/train/
-val: ./images/val/
-
-# number of classes
-nc: 5
-
-# class names
-names: ["clean_water_pot", "dirty_water_pot", "feeding_line", "feeding_pot", "watering_line"]n/
+                                                    | |
+                                                    \ /
+train: ./images/train/
 val: ./images/val/
 
 # number of classes
