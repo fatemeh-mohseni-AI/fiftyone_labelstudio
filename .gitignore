@@ -1,2 +1,5 @@
 venv/
 
+labelstudio_docker/label-studio-ml-backend/label_studio_ml/examples/
+labelstudio_docker/*
+./labelstudio_docker
