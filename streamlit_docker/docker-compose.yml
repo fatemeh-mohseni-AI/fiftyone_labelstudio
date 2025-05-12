@@ -8,6 +8,7 @@ services:
     volumes:
       - .:/app
       - /home/fatemeh/Documents/training_datasets/output2:/dataset1
+      - /home/fatemeh/Documents/training_datasets/USED/5th/:/dataset2
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped 

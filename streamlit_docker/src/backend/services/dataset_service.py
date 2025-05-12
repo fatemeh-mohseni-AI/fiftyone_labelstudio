@@ -13,12 +13,15 @@ from ..utils.dataset_utils import (
 
 class DatasetAnalyzer:
     def __init__(self):
-        self.config = get_config()
-        self.split_paths = get_split_paths(self.config.dataset_path)
+        self.config_manager = get_config()
+        self.dataset_config = self.config_manager.get_active_dataset()
+        if not self.dataset_config:
+            raise ValueError("No active dataset selected")
+        self.split_paths = get_split_paths(self.dataset_config.dataset_path)
         
     def count_labels_per_class(self) -> Tuple[Dict[str, int], int]:
         """Count total labels for each class across all splits"""
-        class_counts = {cls: 0 for cls in self.config.classes}
+        class_counts = {cls: 0 for cls in self.dataset_config.classes}
         total_images = 0
         
         for split, paths in self.split_paths.items():
@@ -26,9 +29,9 @@ class DatasetAnalyzer:
             total_images += len(image_files)
             
             for img_path, label_path in image_files:
-                counts = count_labels_in_file(label_path, len(self.config.classes))
+                counts = count_labels_in_file(label_path, len(self.dataset_config.classes), self.dataset_config.dataset_type)
                 for class_id, count in counts.items():
-                    class_counts[self.config.classes[class_id]] += count
+                    class_counts[self.dataset_config.classes[class_id]] += count
         
         return class_counts, total_images
     
@@ -53,7 +56,7 @@ class DatasetAnalyzer:
             # Analyze metrics
             blur_score = analyze_image_blur(img_path)
             brightness = analyze_image_brightness(img_path)
-            label_sizes = analyze_label_sizes(label_path, (width, height))
+            label_sizes = analyze_label_sizes(label_path, self.dataset_config.dataset_type)
             
             results.append({
                 'image': os.path.basename(img_path),
@@ -81,9 +84,9 @@ class DatasetAnalyzer:
             stats['total_images'] += len(image_files)
             
             for _, label_path in image_files:
-                counts = count_labels_in_file(label_path, len(self.config.classes))
+                counts = count_labels_in_file(label_path, len(self.dataset_config.classes), self.dataset_config.dataset_type)
                 for class_id, count in counts.items():
-                    class_name = self.config.classes[class_id]
+                    class_name = self.dataset_config.classes[class_id]
                     if class_name not in stats['labels_per_class']:
                         stats['labels_per_class'][class_name] = 0
                     stats['labels_per_class'][class_name] += count

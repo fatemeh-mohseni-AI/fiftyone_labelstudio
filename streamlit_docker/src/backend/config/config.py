@@ -1,11 +1,17 @@
 import os
 import yaml
-from typing import List, Dict
+from typing import List, Dict, Optional
+from enum import Enum
+
+class DatasetType(Enum):
+    BBOX = "bbox"
+    SEGMENT = "segment"
 
 class DatasetConfig:
-    def __init__(self, dataset_path: str):
+    def __init__(self, dataset_path: str, dataset_type: Optional[DatasetType] = None):
         self.dataset_path = dataset_path
         self.yaml_path = os.path.join(dataset_path, "dataset.yaml")
+        self.dataset_type = dataset_type
         self._load_config()
 
     def _load_config(self):
@@ -22,6 +28,26 @@ class DatasetConfig:
         self.classes = config.get('names', [])
         self.nc = len(self.classes)
 
+        # Try to auto-detect dataset type if not specified
+        if self.dataset_type is None:
+            self.dataset_type = self._detect_dataset_type()
+
+    def _detect_dataset_type(self) -> DatasetType:
+        """Try to detect if dataset is bbox or segment based on label format"""
+        # Check first label file we can find
+        for split_path in [self.train_path, self.val_path, self.test_path]:
+            labels_dir = os.path.join(split_path, 'labels')
+            if os.path.exists(labels_dir):
+                for label_file in os.listdir(labels_dir):
+                    if label_file.endswith('.txt'):
+                        with open(os.path.join(labels_dir, label_file), 'r') as f:
+                            first_line = f.readline().strip()
+                            if first_line:
+                                parts = first_line.split()
+                                # Segment format has more than 5 values (class + points)
+                                return DatasetType.SEGMENT if len(parts) > 5 else DatasetType.BBOX
+        return DatasetType.BBOX  # Default to BBOX if can't detect
+
     @property
     def splits(self) -> List[str]:
         """Return list of available splits"""
@@ -36,17 +62,57 @@ class DatasetConfig:
             'test': self.test_path
         }
 
-# Global config instance
-dataset_config = None
+class ConfigManager:
+    def __init__(self):
+        self.datasets: Dict[str, DatasetConfig] = {}
+        self.active_dataset: Optional[str] = None
 
-def init_config(dataset_path: str = "/dataset1"):
-    """Initialize global configuration"""
-    global dataset_config
-    dataset_config = DatasetConfig(dataset_path)
-    return dataset_config
+    def discover_datasets(self):
+        """Discover all mounted datasets in the container"""
+        # Look for mounted volumes that contain dataset.yaml
+        for root, dirs, files in os.walk('/'):
+            if 'dataset.yaml' in files:
+                dataset_name = os.path.basename(root)
+                try:
+                    self.datasets[dataset_name] = DatasetConfig(root)
+                    print(f"Discovered dataset: {dataset_name} at {root}")
+                except Exception as e:
+                    print(f"Error loading dataset at {root}: {e}")
 
-def get_config() -> DatasetConfig:
-    """Get global configuration instance"""
-    if dataset_config is None:
+    def set_dataset_type(self, dataset_name: str, dataset_type: DatasetType):
+        """Set the type of a specific dataset"""
+        if dataset_name in self.datasets:
+            self.datasets[dataset_name].dataset_type = dataset_type
+
+    def get_dataset(self, dataset_name: str) -> Optional[DatasetConfig]:
+        """Get configuration for a specific dataset"""
+        return self.datasets.get(dataset_name)
+
+    def set_active_dataset(self, dataset_name: str):
+        """Set the active dataset"""
+        if dataset_name in self.datasets:
+            self.active_dataset = dataset_name
+        else:
+            raise ValueError(f"Dataset {dataset_name} not found")
+
+    def get_active_dataset(self) -> Optional[DatasetConfig]:
+        """Get the active dataset configuration"""
+        if self.active_dataset:
+            return self.datasets[self.active_dataset]
+        return None
+
+# Global config manager instance
+config_manager = None
+
+def init_config():
+    """Initialize global configuration manager"""
+    global config_manager
+    config_manager = ConfigManager()
+    config_manager.discover_datasets()
+    return config_manager
+
+def get_config() -> ConfigManager:
+    """Get global configuration manager instance"""
+    if config_manager is None:
         raise RuntimeError("Configuration not initialized. Call init_config first.")
-    return dataset_config 
+    return config_manager 

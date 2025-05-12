@@ -3,6 +3,7 @@ import glob
 import cv2
 import numpy as np
 from typing import Dict, Tuple, List
+from ..config.config import DatasetType
 
 def get_split_paths(dataset_root: str) -> Dict[str, Dict[str, str]]:
     """Get paths for images and labels directories for each split"""
@@ -44,17 +45,32 @@ def get_image_files(split_path: Dict[str, str]) -> List[Tuple[str, str]]:
     
     return sorted(image_files)
 
-def count_labels_in_file(label_path: str, num_classes: int) -> Dict[int, int]:
+def parse_label_line(line: str, dataset_type: DatasetType) -> Tuple[int, List[float]]:
+    """Parse a single line from a label file based on dataset type"""
+    parts = line.strip().split()
+    if len(parts) < 5:
+        return -1, []
+        
+    class_id = int(parts[0])
+    
+    if dataset_type == DatasetType.BBOX:
+        # BBOX format: class x y w h
+        coords = [float(x) for x in parts[1:5]]
+    else:
+        # Segment format: class x1 y1 x2 y2 ...
+        coords = [float(x) for x in parts[1:]]
+        
+    return class_id, coords
+
+def count_labels_in_file(label_path: str, num_classes: int, dataset_type: DatasetType) -> Dict[int, int]:
     """Count labels in a single label file"""
     counts = {i: 0 for i in range(num_classes)}
     try:
         with open(label_path, 'r') as f:
             for line in f:
-                parts = line.strip().split()
-                if len(parts) >= 5:  # YOLO format requires at least 5 values (class x y w h)
-                    class_id = int(parts[0])
-                    if 0 <= class_id < num_classes:
-                        counts[class_id] += 1
+                class_id, _ = parse_label_line(line, dataset_type)
+                if 0 <= class_id < num_classes:
+                    counts[class_id] += 1
     except Exception as e:
         print(f"Error reading label file {label_path}: {e}")
     return counts
@@ -85,18 +101,39 @@ def analyze_image_brightness(image_path: str) -> float:
         print(f"Error analyzing brightness in {image_path}: {e}")
         return 0.0
 
-def analyze_label_sizes(label_path: str, image_size: Tuple[int, int]) -> List[float]:
+def calculate_bbox_area(coords: List[float]) -> float:
+    """Calculate area for bbox coordinates"""
+    if len(coords) >= 4:
+        return coords[2] * coords[3]  # w * h
+    return 0.0
+
+def calculate_segment_area(coords: List[float]) -> float:
+    """Calculate area for segment coordinates"""
+    if len(coords) < 4 or len(coords) % 2 != 0:
+        return 0.0
+        
+    # Convert coordinates to points
+    points = np.array([(coords[i], coords[i+1]) for i in range(0, len(coords), 2)])
+    
+    # Calculate area using shoelace formula
+    x = points[:, 0]
+    y = points[:, 1]
+    return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+
+def analyze_label_sizes(label_path: str, dataset_type: DatasetType) -> List[float]:
     """Analyze relative sizes of labels in an image"""
     sizes = []
     try:
         with open(label_path, 'r') as f:
             for line in f:
-                parts = line.strip().split()
-                if len(parts) >= 5:  # YOLO format: class x y w h
-                    w = float(parts[3])  # width is already normalized
-                    h = float(parts[4])  # height is already normalized
-                    area = w * h  # This is already relative area since YOLO coordinates are normalized
-                    sizes.append(area)
+                _, coords = parse_label_line(line, dataset_type)
+                if coords:
+                    if dataset_type == DatasetType.BBOX:
+                        area = calculate_bbox_area(coords)
+                    else:
+                        area = calculate_segment_area(coords)
+                    if area > 0:
+                        sizes.append(area)
     except Exception as e:
         print(f"Error analyzing label sizes in {label_path}: {e}")
     return sizes 
