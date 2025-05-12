@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  streamlit:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+      - /home/fatemeh/Documents/training_datasets/output2:/dataset1
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped 
